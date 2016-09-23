@@ -9,24 +9,31 @@ from textblob import TextBlob
 app = Flask(__name__)
 
 
-@app.route('/api/sentiment/query', methods=['POST', 'GET'])
+@app.route(
+    '/api/sentiment/query',
+    methods=['POST', 'GET']
+)
 def query_sentiment():
     try:
         req_json = request.get_json()
-    if req_json is None:
+
+        if req_json is None:
+
+            return jsonify(
+                error='this service require A JSON request'
+            )
+        else:
+            if not ('text' in req_json):
+                raise Exception('Missing mandatory paramater "text"')
+
+        text = req_json['text']
+        blob = TextBlob(text)
+        sentiment = blob.sentiment
+
         return jsonify(
-            error='this service require A JSON request'
+            polarity=sentiment.polarity,
+            subjectivity=sentiment.subjectivity
         )
-    else:
-        if not ('text' in req_json):
-            raise Exception('Missing mandatory paramater "text"')
-    text = req_json['text']
-    blob = TextBlob(text)
-    sentiment = blob.sentiment
-    return jsonify(
-        polarity=sentiment.polarity,
-        subjectivity=sentiment.subjectivity
-    )
 
     except Exception as ex:
         app.log.error(type(ex))
@@ -42,7 +49,6 @@ if __name__ == '__main__':
         format=LOG_FORMAT
     )
     app.log = logging.getLogger(__name__)
-
     port = os.environ['FLASK_PORT']
     app.run(
         host='0.0.0.0',
